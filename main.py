@@ -28,9 +28,13 @@ from kivy.core.window import Window
 from pidev.kivy import DPEAButton
 from pidev.kivy import PauseScreen
 from time import sleep
-import RPi.GPIO as GPIO 
+import spidev
+import os
+import RPi.GPIO as GPIO
 from pidev.stepper import stepper
+from Slush.Devices import L6470Registers
 from pidev.Cyprus_Commands import Cyprus_Commands_RPi as cyprus
+spi = spidev.SpiDev()
 
 
 # ////////////////////////////////////////////////////////////////
@@ -62,13 +66,15 @@ class MyApp(App):
 Builder.load_file('main.kv')
 Window.clearcolor = (.1, .1,.1, 1) # (WHITE)
 
+cyprus.initialize()
 cyprus.open_spi()
 
 # ////////////////////////////////////////////////////////////////
 # //                    SLUSH/HARDWARE SETUP                    //
 # ////////////////////////////////////////////////////////////////
 sm = ScreenManager()
-ramp = stepper(port = 0, speed = INIT_RAMP_SPEED)
+s0 = stepper(port=0, micro_steps=32, hold_current=20, run_current=20, accel_current=20, deaccel_current=20,
+             steps_per_unit=200, speed=1)
 
 # ////////////////////////////////////////////////////////////////
 # //                       MAIN FUNCTIONS                       //
@@ -96,13 +102,43 @@ class MainScreen(Screen):
 
     def toggleGate(self):
         print("Open and Close gate here")
+        cyprus.set_servo_position(2, .75)  # port 5
+        sleep(5)
 
     def toggleStaircase(self):
         print("Turn on and off staircase here")
+        cyprus.set_pwm_values(1, period_value=100000, compare_value=50000, compare_mode=cyprus.LESS_THAN_OR_EQUAL)
+        sleep(7)
+        cyprus.set_pwm_values(1, period_value=100000, compare_value=0, compare_mode=cyprus.LESS_THAN_OR_EQUAL)
+        sleep(5)
+
         
     def toggleRamp(self):
+        s0.start_relative_move(29)
+        while s0.is_busy():
+           sleep(.1)
+
+        s0.softStop()
+        sleep(1)
+        s0.start_relative_move(-29)
+        while s0.is_busy():
+            sleep(.1)
+
         print("Move ramp up and down here")
-        
+        #if (cyprus.read_gpio() & 0b0010) == 0b0010:
+        #    sleep(1)
+        #    s0.start_relative_move(5)
+        #    sleep(1)
+        #    print("GPIO on port P7 is HIGH")
+        #elif (cyprus.read_gpio() & 0b0010) == 0b0000:
+        #    sleep(1)
+        #    print("GPIO on port P7 is LOW")
+        #    s0.start_relative_move(5)
+        #    sleep(5)
+        #else:
+        #    sleep(1)
+        #    print("GPIO on port P7 is experiencing issues")
+
     def auto(self):
         print("Run through one cycle of the perpetual motion machine")
         
@@ -113,7 +149,19 @@ class MainScreen(Screen):
         print("Set the staircase speed and update slider text")
         
     def initialize(self):
+
+        sleep(1)
+        cyprus.set_pwm_values(1, period_value=100000, compare_value=0, compare_mode=cyprus.LESS_THAN_OR_EQUAL)
+        sleep(1)
+        s0.go_until_press(0, 3*6400)
+        while s0.is_busy():
+           sleep(.1)
+        s0.set_as_home()
+        cyprus.set_servo_position(2, 0)  # port 5
+        sleep(5)
+
         print("Close gate, stop staircase and home ramp here")
+        print(self.version)
 
     def resetColors(self):
         self.ids.gate.color = YELLOW
