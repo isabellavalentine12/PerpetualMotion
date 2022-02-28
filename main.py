@@ -35,6 +35,7 @@ from pidev.stepper import stepper
 from Slush.Devices import L6470Registers
 from pidev.Cyprus_Commands import Cyprus_Commands_RPi as cyprus
 spi = spidev.SpiDev()
+from threading import Thread
 
 
 # ////////////////////////////////////////////////////////////////
@@ -47,8 +48,10 @@ HOME = True
 TOP = False
 OPEN = False
 CLOSE = True
-YELLOW = .180, 0.188, 0.980, 1
-BLUE = 0.917, 0.796, 0.380, 1
+BLUE = .180, 0.188, 0.980, 1
+USEDBLUE = .180, 0.188, 0.980, .5
+YELLOW = 0.917, 0.796, 0.380, 1
+USEDYELLOW = 0.917, 0.796, 0.380, .5
 DEBOUNCE = 0.1
 INIT_RAMP_SPEED = 150
 RAMP_LENGTH = 725
@@ -74,7 +77,7 @@ cyprus.open_spi()
 # ////////////////////////////////////////////////////////////////
 sm = ScreenManager()
 s0 = stepper(port=0, micro_steps=32, hold_current=20, run_current=20, accel_current=20, deaccel_current=20,
-             steps_per_unit=200, speed=1)
+             steps_per_unit=200, speed=3)
 
 # ////////////////////////////////////////////////////////////////
 # //                       MAIN FUNCTIONS                       //
@@ -95,6 +98,8 @@ class MainScreen(Screen):
     staircaseSpeedText = '0'
     rampSpeed = INIT_RAMP_SPEED
     staircaseSpeed = 40
+    gatecount = 0
+    staircount = 0
 
     def __init__(self, **kwargs):
         super(MainScreen, self).__init__(**kwargs)
@@ -102,54 +107,89 @@ class MainScreen(Screen):
 
     def toggleGate(self):
         print("Open and Close gate here")
-        cyprus.set_servo_position(2, .75)  # port 5
-        sleep(5)
+        if self.gatecount%2 == 0:
+            self.gate.disabled = True
+            self.gate.text = "Close Gate"
+            self.ids.gate.color = USEDBLUE
+            cyprus.set_servo_position(2, .6)  # port 5
+            self.gatecount += 1
+            self.gate.disabled = False
+        else:
+            self.gate.disabled = True
+            self.gate.text = "Open Gate"
+            self.ids.gate.color = USEDBLUE
+            cyprus.set_servo_position(2, 0)  # port 5
+            self.gatecount += 1
+            self.gate.disabled = False
+        self.ids.gate.color = BLUE
+
+    def threadToggleGate(self):
+        Thread(target=self.toggleGate, daemon=True).start()
+        print('using gate thread')
 
     def toggleStaircase(self):
-        print("Turn on and off staircase here")
-        cyprus.set_pwm_values(1, period_value=100000, compare_value=50000, compare_mode=cyprus.LESS_THAN_OR_EQUAL)
-        sleep(7)
-        cyprus.set_pwm_values(1, period_value=100000, compare_value=0, compare_mode=cyprus.LESS_THAN_OR_EQUAL)
-        sleep(5)
+        if self.staircount%2 == 0:
+            self.staircase.disabled = True
+            self.staircase.text = "Staircase Off"
+            self.ids.staircase.color = USEDBLUE
+            cyprus.set_pwm_values(1, period_value=100000, compare_value=50000, compare_mode=cyprus.LESS_THAN_OR_EQUAL)
+            self.staircount += 1
+            self.ids.staircase.color = BLUE
+            self.staircase.disabled = False
+        else:
+            self.staircase.disabled = True
+            self.staircase.text = "Staircase On"
+            self.ids.staircase.color = USEDBLUE
+            cyprus.set_pwm_values(1, period_value=100000, compare_value=0, compare_mode=cyprus.LESS_THAN_OR_EQUAL)
+            self.staircount += 1
+            self.ids.staircase.color = BLUE
+            self.staircase.disabled = False
 
-        
     def toggleRamp(self):
+        self.ramp.disabled = True
+        self.ids.ramp.color = USEDBLUE
         s0.start_relative_move(29)
-        while s0.is_busy():
+        while s0.is_busy() and s0.get_position_in_units() < 29:
            sleep(.1)
-
         s0.softStop()
         sleep(1)
         s0.start_relative_move(-29)
-        while s0.is_busy():
+        while s0.is_busy() and s0.get_position_in_units() > 0:
             sleep(.1)
+        s0.softStop()
+        self.ramp.disabled = False
+        self.ids.ramp.color = BLUE
 
-        print("Move ramp up and down here")
-        #if (cyprus.read_gpio() & 0b0010) == 0b0010:
-        #    sleep(1)
-        #    s0.start_relative_move(5)
-        #    sleep(1)
-        #    print("GPIO on port P7 is HIGH")
-        #elif (cyprus.read_gpio() & 0b0010) == 0b0000:
-        #    sleep(1)
-        #    print("GPIO on port P7 is LOW")
-        #    s0.start_relative_move(5)
-        #    sleep(5)
-        #else:
-        #    sleep(1)
-        #    print("GPIO on port P7 is experiencing issues")
+    def threadToggleRamp(self):
+        Thread(target=self.toggleRamp, daemon=True).start()
+        print('using thread')
 
     def auto(self):
         print("Run through one cycle of the perpetual motion machine")
+        s0.start_relative_move(29)
+        while s0.is_busy():
+           sleep(.1)
+        s0.softStop()
+        sleep(1)
+        s0.start_relative_move(-29)
+        print("Turn on and off staircase here")
+        cyprus.set_pwm_values(1, period_value=100000, compare_value=100000, compare_mode=cyprus.LESS_THAN_OR_EQUAL)
+        sleep(8)
+        cyprus.set_pwm_values(1, period_value=100000, compare_value=0, compare_mode=cyprus.LESS_THAN_OR_EQUAL)
+        sleep(1)
+        print("Open and Close gate here")
+        cyprus.set_servo_position(2, .75)  # port 5
+        sleep(5)
         
     def setRampSpeed(self, speed):
         print("Set the ramp speed and update slider text")
+        #self.rampSpeed.value = speed
+
         
     def setStaircaseSpeed(self, speed):
         print("Set the staircase speed and update slider text")
         
     def initialize(self):
-
         sleep(1)
         cyprus.set_pwm_values(1, period_value=100000, compare_value=0, compare_mode=cyprus.LESS_THAN_OR_EQUAL)
         sleep(1)
@@ -164,10 +204,10 @@ class MainScreen(Screen):
         print(self.version)
 
     def resetColors(self):
-        self.ids.gate.color = YELLOW
-        self.ids.staircase.color = YELLOW
-        self.ids.ramp.color = YELLOW
-        self.ids.auto.color = BLUE
+        self.ids.gate.color = BLUE
+        self.ids.staircase.color = BLUE
+        self.ids.ramp.color = BLUE
+        self.ids.auto.color = YELLOW
     
     def quit(self):
         print("Exit")

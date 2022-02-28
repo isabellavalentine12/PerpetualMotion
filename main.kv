@@ -1,5 +1,10 @@
 <MainScreen>:
     name: 'main'
+    staircase: staircase
+    ramp: ramp
+    gate: gate
+    #rampSpeed: rampSpeed
+
     FloatLayout:
         size_hint: None, None
 
@@ -29,7 +34,7 @@
             size_hint: None,None
             size: 300,100
             on_press: root.auto()
-            on_release: root.resetColors()
+            #on_release: root.resetColors()
 
         # Turn on/off gate
         DPEAButton:
@@ -42,8 +47,9 @@
             background_normal: ''
             size_hint: None,None
             size: 300,100
+            #on_press: root.threadToggleGate()
             on_press: root.toggleGate()
-            on_release: root.resetColors()
+            #on_release: root.resetColors()
 
         DPEAButton:
             id: ramp
@@ -55,8 +61,8 @@
             background_normal: ''
             size_hint: None,None
             size: 300,100
-            on_press: root.toggleRamp()
-            on_release: root.resetColors()
+            on_press: root.threadToggleRamp()
+            #on_release: root.resetColors()
 
         DPEAButton:
             id: staircase
@@ -69,7 +75,7 @@
             size_hint: None,None
             size: 300,100
             on_press: root.toggleStaircase()
-            on_release: root.resetColors()
+            #on_release: root.resetColors()
 
 	##################
 	##### SLIDERS ####
@@ -98,7 +104,6 @@
             y: root.height * 0.05
             size_hint_x: 7
             on_value: root.setStaircaseSpeed(self.value)
-
 
         ##################
 	##### LABELS #####
