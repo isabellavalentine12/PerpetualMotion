@@ -53,7 +53,7 @@ USEDBLUE = .180, 0.188, 0.980, .5
 YELLOW = 0.917, 0.796, 0.380, 1
 USEDYELLOW = 0.917, 0.796, 0.380, .5
 DEBOUNCE = 0.1
-INIT_RAMP_SPEED = 150
+INIT_RAMP_SPEED = 3
 RAMP_LENGTH = 725
 
 
@@ -77,7 +77,7 @@ cyprus.open_spi()
 # ////////////////////////////////////////////////////////////////
 sm = ScreenManager()
 s0 = stepper(port=0, micro_steps=32, hold_current=20, run_current=20, accel_current=20, deaccel_current=20,
-             steps_per_unit=200, speed=3)
+             steps_per_unit=200, speed = 3)
 
 # ////////////////////////////////////////////////////////////////
 # //                       MAIN FUNCTIONS                       //
@@ -183,7 +183,8 @@ class MainScreen(Screen):
         
     def setRampSpeed(self, speed):
         print("Set the ramp speed and update slider text")
-        #self.rampSpeed.value = speed
+        rampSpeedValue = self.rampSpeed.value
+        s0.set_speed(rampSpeedValue)
 
         
     def setStaircaseSpeed(self, speed):
