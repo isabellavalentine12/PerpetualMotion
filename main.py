@@ -96,7 +96,7 @@ s0 = stepper(port=0, micro_steps=32, hold_current=20, run_current=20, accel_curr
 class MainScreen(Screen):
     version = cyprus.read_firmware_version()
     staircaseSpeedText = '0'
-    rampSpeed = INIT_RAMP_SPEED
+    rampSpeedValue = INIT_RAMP_SPEED
     staircaseSpeed = 40
     gatecount = 0
     staircount = 0
@@ -148,14 +148,18 @@ class MainScreen(Screen):
     def toggleRamp(self):
         self.ramp.disabled = True
         self.ids.ramp.color = USEDBLUE
-        s0.start_relative_move(29)
-        while s0.is_busy() and s0.get_position_in_units() < 29:
+        #s0.start_relative_move(29)
+        s0.start_relative_move(.5)
+        while s0.get_position_in_units() < 29:
            sleep(.1)
+           print("motor moving??")
+           s0.go_until_press(1, int(self.rampSpeedValue*6400))
         s0.softStop()
         sleep(1)
-        s0.start_relative_move(-29)
-        while s0.is_busy() and s0.get_position_in_units() > 0:
+        #s0.start_relative_move(-1)
+        while s0.get_position_in_units() > 0:
             sleep(.1)
+            s0.go_until_press(0, int(self.rampSpeedValue * 6400))
         s0.softStop()
         self.ramp.disabled = False
         self.ids.ramp.color = BLUE
@@ -181,10 +185,16 @@ class MainScreen(Screen):
         cyprus.set_servo_position(2, .75)  # port 5
         sleep(5)
         
-    def setRampSpeed(self, speed):
+    def setRampSpeed(self):
         print("Set the ramp speed and update slider text")
-        rampSpeedValue = self.rampSpeed.value
-        s0.set_speed(rampSpeedValue)
+        self.rampSpeedLabel.text = 'Ramp Speed: ' + str(self.rampSpeed.value)
+        self.rampSpeedValue = self.rampSpeed.value
+        if s0.is_busy():
+            sleep(.1)
+            s0.set_speed(self.rampSpeedValue)
+        else:
+            s0.set_speed(self.rampSpeedValue)
+
 
         
     def setStaircaseSpeed(self, speed):
