@@ -95,9 +95,9 @@ s0 = stepper(port=0, micro_steps=32, hold_current=20, run_current=20, accel_curr
 # ////////////////////////////////////////////////////////////////
 class MainScreen(Screen):
     version = cyprus.read_firmware_version()
-    staircaseSpeedText = '0'
+    #staircaseSpeedText = '0'
     rampSpeedValue = INIT_RAMP_SPEED
-    staircaseSpeed = 40
+    staircaseSpeedValue = 50000
     gatecount = 0
     staircount = 0
 
@@ -132,7 +132,7 @@ class MainScreen(Screen):
             self.staircase.disabled = True
             self.staircase.text = "Staircase Off"
             self.ids.staircase.color = USEDBLUE
-            cyprus.set_pwm_values(1, period_value=100000, compare_value=50000, compare_mode=cyprus.LESS_THAN_OR_EQUAL)
+            cyprus.set_pwm_values(1, period_value=100000, compare_value=int(self.staircaseSpeedValue), compare_mode=cyprus.LESS_THAN_OR_EQUAL)
             self.staircount += 1
             self.ids.staircase.color = BLUE
             self.staircase.disabled = False
@@ -169,21 +169,43 @@ class MainScreen(Screen):
         print('using thread')
 
     def auto(self):
-        print("Run through one cycle of the perpetual motion machine")
-        s0.start_relative_move(29)
-        while s0.is_busy():
-           sleep(.1)
-        s0.softStop()
-        sleep(1)
-        s0.start_relative_move(-29)
-        print("Turn on and off staircase here")
-        cyprus.set_pwm_values(1, period_value=100000, compare_value=100000, compare_mode=cyprus.LESS_THAN_OR_EQUAL)
-        sleep(8)
-        cyprus.set_pwm_values(1, period_value=100000, compare_value=0, compare_mode=cyprus.LESS_THAN_OR_EQUAL)
-        sleep(1)
-        print("Open and Close gate here")
-        cyprus.set_servo_position(2, .75)  # port 5
-        sleep(5)
+        if s0.get_position_in_units() == 0:
+            print("Run through one cycle of the perpetual motion machine")
+            #ramp begins
+            self.ramp.disabled = True
+            self.ids.ramp.color = USEDBLUE
+            s0.relative_move(.5)
+            while s0.get_position_in_units() < 29:
+                sleep(.1)
+                print("motor moving??")
+                s0.go_until_press(1, int(self.rampSpeedValue * 6400))
+            s0.softStop()
+            s0.go_until_press(0, int(4 * 6400))
+            self.ids.ramp.color = BLUE
+            self.ramp.disabled = False
+            #staircase begins
+            self.staircase.disabled = True
+            self.ids.staircase.color = USEDBLUE
+            cyprus.set_pwm_values(1, period_value=100000, compare_value=int(self.staircaseSpeedValue), compare_mode=cyprus.LESS_THAN_OR_EQUAL)
+            sleep (10)
+            cyprus.set_pwm_values(1, period_value=100000, compare_value=0, compare_mode=cyprus.LESS_THAN_OR_EQUAL)
+            sleep(6.5)
+            self.ids.staircase.color = BLUE
+            self.staircase.disabled = False
+            #gate begins
+            self.gate.disabled = True
+            self.ids.gate.color = USEDBLUE
+            cyprus.set_servo_position(2, 0.75)  # port 5
+            sleep(4)
+            cyprus.set_servo_position(2, 0)
+            self.gate.disabled = False
+            self.ids.gate.color = BLUE
+        else:
+            print("stepper motor not in position")
+
+    def threadAuto(self):
+        Thread(target=self.auto, daemon=True).start()
+        print('using thread')
         
     def setRampSpeed(self):
         print("Set the ramp speed and update slider text")
@@ -195,10 +217,14 @@ class MainScreen(Screen):
         else:
             s0.set_speed(self.rampSpeedValue)
 
-
-        
-    def setStaircaseSpeed(self, speed):
+    def setStaircaseSpeed(self):
         print("Set the staircase speed and update slider text")
+        self.staircaseSpeedLabel.text = 'Staircase Speed: ' + str(self.staircaseSpeed.value)
+        self.staircaseSpeedValue = self.staircaseSpeed.value
+        if self.staircase.text == "Staircase Off":
+            cyprus.set_pwm_values(1, period_value=100000, compare_value=int(self.staircaseSpeedValue), compare_mode=cyprus.LESS_THAN_OR_EQUAL)
+        else:
+            cyprus.set_pwm_values(1, period_value=100000, compare_value=0, compare_mode=cyprus.LESS_THAN_OR_EQUAL)
         
     def initialize(self):
         sleep(1)

@@ -5,6 +5,8 @@
     gate: gate
     rampSpeed: rampSpeed
     rampSpeedLabel: rampSpeedLabel
+    staircaseSpeedLabel: staircaseSpeedLabel
+    staircaseSpeed: staircaseSpeed
 
     FloatLayout:
         size_hint: None, None
@@ -34,7 +36,7 @@
             background_normal: ''
             size_hint: None,None
             size: 300,100
-            on_press: root.auto()
+            on_press: root.threadAuto()
             #on_release: root.resetColors()
 
         # Turn on/off gate
@@ -97,14 +99,14 @@
         Slider:
             id: staircaseSpeed
             orientation: 'horizontal'
-            min: 10
-            max: 50
-            value: root.staircaseSpeed
-            step: 1
+            min: 1000
+            max: 50000
+            value: root.staircaseSpeedValue
+            step: 10
             center_x: root.width * 0.6
             y: root.height * 0.05
             size_hint_x: 7
-            on_value: root.setStaircaseSpeed(self.value)
+            on_value: root.setStaircaseSpeed()
 
         ##################
 	##### LABELS #####
@@ -122,7 +124,7 @@
 
         Label:
             id: rampSpeedLabel
-            text: 'Ramp Speed: ' + str(round(rampSpeed.value,2))
+            text: 'Ramp Speed: ' + str(round(rampSpeed.value,2)) #issues with this rounding
             font_size: 40
             center_x: root.width * 0.22
             y: root.height * 0.15
@@ -130,7 +132,7 @@
 
         Label:
             id: staircaseSpeedLabel
-            text: 'Staircase Speed: ' + str(root.staircaseSpeed)
+            text: 'Staircase Speed: ' + str(root.staircaseSpeedValue)
             font_size: 40
             center_x: root.width * 0.20
             y: root.height * 0.05
