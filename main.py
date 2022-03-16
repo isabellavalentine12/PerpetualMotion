@@ -185,11 +185,13 @@ class MainScreen(Screen):
             self.ramp.disabled = False
             #staircase begins
             self.staircase.disabled = True
+            self.staircase.text = "Staircase"
             self.ids.staircase.color = USEDBLUE
             cyprus.set_pwm_values(1, period_value=100000, compare_value=int(self.staircaseSpeedValue), compare_mode=cyprus.LESS_THAN_OR_EQUAL)
             sleep (10)
             cyprus.set_pwm_values(1, period_value=100000, compare_value=0, compare_mode=cyprus.LESS_THAN_OR_EQUAL)
             sleep(6.5)
+            self.staircase.text = "Staircase On"
             self.ids.staircase.color = BLUE
             self.staircase.disabled = False
             #gate begins
@@ -217,15 +219,20 @@ class MainScreen(Screen):
         else:
             s0.set_speed(self.rampSpeedValue)
 
+
+
     def setStaircaseSpeed(self):
         print("Set the staircase speed and update slider text")
         self.staircaseSpeedLabel.text = 'Staircase Speed: ' + str(self.staircaseSpeed.value)
         self.staircaseSpeedValue = self.staircaseSpeed.value
         if self.staircase.text == "Staircase Off":
             cyprus.set_pwm_values(1, period_value=100000, compare_value=int(self.staircaseSpeedValue), compare_mode=cyprus.LESS_THAN_OR_EQUAL)
+        elif self.staircase.text == "Staircase":
+            cyprus.set_pwm_values(1, period_value=100000, compare_value=int(self.staircaseSpeedValue), compare_mode=cyprus.LESS_THAN_OR_EQUAL)
         else:
             cyprus.set_pwm_values(1, period_value=100000, compare_value=0, compare_mode=cyprus.LESS_THAN_OR_EQUAL)
-        
+
+
     def initialize(self):
         sleep(1)
         cyprus.set_pwm_values(1, period_value=100000, compare_value=0, compare_mode=cyprus.LESS_THAN_OR_EQUAL)

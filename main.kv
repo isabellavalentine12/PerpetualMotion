@@ -80,9 +80,7 @@
             on_press: root.toggleStaircase()
             #on_release: root.resetColors()
 
-	##################
 	##### SLIDERS ####
-        ##################
 
         Slider:
             id: rampSpeed
@@ -124,7 +122,7 @@
 
         Label:
             id: rampSpeedLabel
-            text: 'Ramp Speed: ' + str(round(rampSpeed.value,2)) #issues with this rounding
+            text: 'Ramp Speed: ' + str(round(rampSpeed.value, 0)) #issues with this rounding
             font_size: 40
             center_x: root.width * 0.22
             y: root.height * 0.15
