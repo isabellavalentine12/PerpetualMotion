@@ -204,7 +204,6 @@ class MainScreen(Screen):
             self.ids.gate.color = BLUE
         else:
             print("stepper motor not in position")
-
     def threadAuto(self):
         Thread(target=self.auto, daemon=True).start()
         print('using thread')
@@ -219,8 +218,6 @@ class MainScreen(Screen):
         else:
             s0.set_speed(self.rampSpeedValue)
 
-
-
     def setStaircaseSpeed(self):
         print("Set the staircase speed and update slider text")
         self.staircaseSpeedLabel.text = 'Staircase Speed: ' + str(self.staircaseSpeed.value)
@@ -231,7 +228,6 @@ class MainScreen(Screen):
             cyprus.set_pwm_values(1, period_value=100000, compare_value=int(self.staircaseSpeedValue), compare_mode=cyprus.LESS_THAN_OR_EQUAL)
         else:
             cyprus.set_pwm_values(1, period_value=100000, compare_value=0, compare_mode=cyprus.LESS_THAN_OR_EQUAL)
-
 
     def initialize(self):
         sleep(1)
